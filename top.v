@@ -1,4 +1,4 @@
-`include "reg_flie.v"
+`include "reg_file.v"
 `include "instruction_mem.v"
 `include "Data_mem.v"
 `include "Imm_extender.v"
@@ -39,13 +39,11 @@ module top(
     //WriteBack stage
     wire [31:0] PC_PLUS4W;
     wire [4:0]  Reg_destW;
-    wire [31:0] ReadDataW, ALU_ResultW, Result_dataW;
+    wire [31:0] ReadDataW, ALU_ResultW, ResultDataW;
     wire [1:0]  ResultSrcW;
     wire        RegWriteW;
 
-    // ------------------------------
     // Pipeline Registers
-    // ------------------------------
 
     // F → D
     reg [31:0] instrD_reg, PCD_reg, PC_PLUS4D_reg;
@@ -170,7 +168,7 @@ module top(
         .A1(instrD[19:15]),
         .A2(instrD[24:20]),
         .A3(Reg_destW),
-        .WD3(Result_dataW),
+        .WD3(ResultDataW),
         .Reg_Write_En(RegWriteW),
         .RD1(RD1D),
         .RD2(RD2D)
@@ -221,5 +219,31 @@ module top(
         .ALU_Result(ALUResultE),
         .Zero()
     );
+
+    assign PC_PLUS4F = PCF + 4;
+
+    assign ResultDataW =(ResultSrcW == 2'b00) ? ALU_ResultW :
+                        (ResultSrcW == 2'b01) ? ReadDataW :
+                        (ResultSrcW == 2'b10) ? PC_PLUS4W :ALU_ResultW;
+
+
+    assign PCTargetE = PCE + imm_extE ;
+
+    reg [31:0] PCF_reg;
+    always @(posedge clk or posedge rst ) begin
+        if (rst)
+        PCF_reg <= 0;
+        else
+        PCF_reg <= PCF_;
+    end
+
+    assign PCF = PCF_reg;
+
+    assign PCF_ = (JumpE) ? PCTargetE :
+              (BranchE && Zero) ? PCTargetE :
+              PC_PLUS4F;
+    
+
+
 
 endmodule
