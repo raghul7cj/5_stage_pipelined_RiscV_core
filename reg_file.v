@@ -5,8 +5,8 @@ module Reg_File(
         input [4:0]A3,
         input [31:0]WD3,
         input Reg_Write_En,
-        output reg [31:0]RD1,
-        output reg [31:0]RD2
+        output wire [31:0]RD1,
+        output wire [31:0]RD2
 );
     reg [31:0] Reg_array [31:0] ;
 

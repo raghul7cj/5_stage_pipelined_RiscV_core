@@ -19,15 +19,15 @@ module top(
     wire [31:0] instrD, PCD, PC_PLUS4D, imm_extD, RD1D, RD2D;
     wire [4:0]  Rs1D, Rs2D, Reg_destD;
     wire [1:0]  ResultSrcD, ImmSrcD;
-    wire        RegWriteD, MemWriteD, ALUSrcD, JumpD, BranchD;
+    wire        RegWriteD, MemWriteD, ALUSrcD, JumpD, BranchD, branch_on_not_equal;
     wire [2:0]  ALUControlD;
     
     //Excecute stage
     wire [31:0] RD1E, RD2E, imm_extE, SrcAE, SrcBE;
     wire [31:0] PCE, PC_PLUS4E, ALUResultE, WriteDataE, PCTargetE;
-    wire [2:0]  ALU_ControlE;
+    wire [3:0]  ALU_ControlE;
     wire [1:0]  ResultSrcE;
-    wire        RegWriteE, MemWriteE, ALUSrcE, JumpE, BranchE;
+    wire        RegWriteE, MemWriteE, ALUSrcE, JumpE, BranchE, ZeroE;
     wire [4:0]  Reg_destE;
     
     //Memory access stage
@@ -45,7 +45,7 @@ module top(
 
     // Pipeline Registers
 
-    // F → D
+    // F ? D
     reg [31:0] instrD_reg, PCD_reg, PC_PLUS4D_reg;
     always @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -62,10 +62,10 @@ module top(
     assign PCD      = PCD_reg;
     assign PC_PLUS4D= PC_PLUS4D_reg;
 
-    // D → E
+    // D ? E
     reg [31:0] RD1E_reg, RD2E_reg, imm_extE_reg, PCE_reg, PC_PLUS4E_reg;
     reg [4:0]  Reg_destE_reg;
-    reg [2:0]  ALU_ControlE_reg;
+    reg [3:0]  ALU_ControlE_reg;
     reg [1:0]  ResultSrcE_reg;
     reg        RegWriteE_reg, MemWriteE_reg, ALUSrcE_reg, JumpE_reg, BranchE_reg;
     always @(posedge clk or posedge rst) begin
@@ -106,7 +106,7 @@ module top(
     assign JumpE = JumpE_reg;
     assign BranchE = BranchE_reg;
 
-    // E → M
+    // E ? M
     reg [31:0] ALU_ResultM_reg, WriteDataM_reg, PC_PLUS4M_reg;
     reg [4:0]  Reg_destM_reg;
     reg [1:0]  ResultSrcM_reg;
@@ -135,7 +135,7 @@ module top(
     assign RegWriteM = RegWriteM_reg;
     assign MemWriteM = MemWriteM_reg;
 
-    // M → W
+    // M ? W
     reg [31:0] ALU_ResultW_reg, ReadDataW_reg, PC_PLUS4W_reg;
     reg [4:0]  Reg_destW_reg;
     reg [1:0]  ResultSrcW_reg;
@@ -208,7 +208,8 @@ module top(
         .jump(JumpD),
         .Branch(BranchD),
         .Alu_src(ALUSrcD),
-        .ALU_Control(ALUControlD)
+        .ALU_Control(ALUControlD),
+        .branch_on_not_equal(branch_on_not_equal)
     );
 
     // ALU
@@ -217,7 +218,7 @@ module top(
         .B(ALUSrcE ? imm_extE : RD2E),
         .ALU_Control(ALU_ControlE),
         .ALU_Result(ALUResultE),
-        .Zero()
+        .Zero(ZeroE)
     );
 
     assign PC_PLUS4F = PCF + 4;
@@ -240,7 +241,7 @@ module top(
     assign PCF = PCF_reg;
 
     assign PCF_ = (JumpE) ? PCTargetE :
-              (BranchE && Zero) ? PCTargetE :
+              (BranchE && ((branch_on_not_equal && !ZeroE) || (!branch_on_not_equal && ZeroE))) ? PCTargetE :
               PC_PLUS4F;
     
 
