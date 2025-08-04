@@ -33,12 +33,12 @@ module control_unit(
                ALU_SRC_IMM = 1'b1;
 
     // ALU Operations
-    localparam ALU_ADD  = 3'b0000,
-               ALU_SUB  = 3'b0001,
-               ALU_AND  = 3'b0010,
-               ALU_OR   = 3'b0011,
-               ALU_SLL  = 3'b0100,
-               ALU_SRL  = 3'b0101;
+    localparam ALU_ADD  = 4'b0000,
+               ALU_SUB  = 4'b0001,
+               ALU_AND  = 4'b0010,
+               ALU_OR   = 4'b0011,
+               ALU_SLL  = 4'b0100,
+               ALU_SRL  = 4'b0101;
 
     wire [9:0] funct;
     assign funct = {funct7[6:0], funct3[2:0]};
@@ -53,7 +53,7 @@ module control_unit(
         Branch      = 0;
         Alu_src     = ALU_SRC_REG;
         ALU_Control = ALU_ADD;
-
+        branch_on_not_equal = 0;
         case (opcode)
             7'b0110011: begin // R-Type (ADD, SUB, AND, OR, SLL, SRL)
                 Reg_write = 1;

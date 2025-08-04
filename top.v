@@ -18,9 +18,9 @@ module top(
     //Decode stage
     wire [31:0] instrD, PCD, PC_PLUS4D, imm_extD, RD1D, RD2D;
     wire [4:0]  Rs1D, Rs2D, Reg_destD;
-    wire [1:0]  ResultSrcD, ImmSrcD;
+    wire [1:0]  ResultSrcD;
     wire        RegWriteD, MemWriteD, ALUSrcD, JumpD, BranchD, branch_on_not_equal;
-    wire [2:0]  ALUControlD;
+    wire [2:0]  ALUControlD, ImmSrcD;
     
     //Excecute stage
     wire [31:0] RD1E, RD2E, imm_extE, SrcAE, SrcBE;
@@ -171,7 +171,8 @@ module top(
         .WD3(ResultDataW),
         .Reg_Write_En(RegWriteW),
         .RD1(RD1D),
-        .RD2(RD2D)
+        .RD2(RD2D),
+        .rst(rst)
     );
 
     // Instruction Memory

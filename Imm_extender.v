@@ -13,7 +13,7 @@ module immediate_extender (
 
     reg [31:0] imm_ext_reg;
 
-    always @(inst, Imm_src) begin
+    always @(*) begin
         case (Imm_src)
             // I-type: For ADDI, LW, JALR
             IMM_I:

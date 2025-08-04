@@ -5,15 +5,22 @@ module ALU (
     output reg [31:0] ALU_Result,
     output Zero
 );
+    localparam ALU_ADD  = 4'b0000,
+               ALU_SUB  = 4'b0001,
+               ALU_AND  = 4'b0010,
+               ALU_OR   = 4'b0011,
+               ALU_SLL  = 4'b0100,
+               ALU_SRL  = 4'b0101;
+    
     always @(*) begin
         case (ALU_Control)
-            4'b0000: ALU_Result = A & B;       // AND
-            4'b0001: ALU_Result = A | B;       // OR
-            4'b0010: ALU_Result = A + B;       // ADD
-            4'b0110: ALU_Result = A - B;       // SUB
-            4'b0111: ALU_Result = (A < B) ? 1 : 0; // SLT
-            4'b1100: ALU_Result = ~(A | B);    // NOR
-            default: ALU_Result = 0;
+            ALU_ADD: ALU_Result = A + B;          // ADD
+            ALU_SUB: ALU_Result = A - B;          // SUB
+            ALU_AND: ALU_Result = A & B;          // AND
+            ALU_OR:  ALU_Result = A | B;          // OR
+            ALU_SLL: ALU_Result = A << B[4:0];    // SLL
+            ALU_SRL: ALU_Result = A >> B[4:0];    // SRL
+            default: ALU_Result = 32'b0;
         endcase
     end
 
