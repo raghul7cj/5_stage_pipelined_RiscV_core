@@ -1,4 +1,4 @@
-// Control Unit for RV32I (Recommended Instructions Only)
+// Control Unit for RV32I 
 module control_unit(
     input  [6:0] opcode,
     input  [2:0] funct3,
@@ -12,7 +12,9 @@ module control_unit(
     output reg Branch,
     output reg Alu_src,
     output reg [3:0] ALU_Control,
-    output reg branch_on_not_equal
+    output reg branch_on_not_equal,
+    output reg [1:0] Store_type,
+    output reg [2:0] Load_type
 );
 
     // Immediate Source Encoding
@@ -33,12 +35,27 @@ module control_unit(
                ALU_SRC_IMM = 1'b1;
 
     // ALU Operations
-    localparam ALU_ADD  = 4'b0000,
-               ALU_SUB  = 4'b0001,
-               ALU_AND  = 4'b0010,
-               ALU_OR   = 4'b0011,
-               ALU_SLL  = 4'b0100,
-               ALU_SRL  = 4'b0101;
+    localparam  ALU_ADD  = 4'b0000,
+                ALU_SUB  = 4'b0001,
+                ALU_AND  = 4'b0010,
+                ALU_OR   = 4'b0011,
+                ALU_XOR  = 4'b0100,
+                ALU_SLL  = 4'b0101,
+                ALU_SRL  = 4'b0110,
+                ALU_SRA  = 4'b0111,
+                ALU_SLT  = 4'b1000,
+                ALU_SLTU = 4'b1001;
+
+    localparam LOAD_WORD = 3'b000,
+           LOAD_HALF = 3'b001,
+           LOAD_BYTE = 3'b010,
+           LOAD_HALF_U = 3'b011,   // You may compress differently if desired
+           LOAD_BYTE_U = 3'b111;  // Or use 3 bits if you want all explicit types
+
+localparam STORE_WORD = 2'b00,
+           STORE_HALF = 2'b01,
+           STORE_BYTE = 2'b10;
+
 
     wire [9:0] funct;
     assign funct = {funct7[6:0], funct3[2:0]};
@@ -66,37 +83,65 @@ module control_unit(
                     10'b0000000110: ALU_Control = ALU_OR;  // OR
                     10'b0000000001: ALU_Control = ALU_SLL; // SLL
                     10'b0000000101: ALU_Control = ALU_SRL; // SRL
+                    10'b0100000101: ALU_Control = ALU_SRA; // SRA
+                    10'b0000000010: ALU_Control = ALU_SLT; // SLT
+                    10'b0000000011: ALU_Control = ALU_SLTU; // SLTU
                     default: ALU_Control = ALU_ADD;
                 endcase
             end
-            7'b0010011: begin // I-Type (ADDI, ANDI, ORI, SLLI, SRLI)
+            7'b0010011: begin // I-Type (ADDI, ANDI, ORI, XORI, SLTI, SLTIU, SLLI, SRLI, SRAI)
                 Reg_write = 1;
-                Alu_src = ALU_SRC_IMM;
-                Imm_src = IMM_I;
-                case (funct3)
-                    3'b000: ALU_Control = ALU_ADD;      // ADDI
-                    3'b111: ALU_Control = ALU_AND;      // ANDI
-                    3'b110: ALU_Control = ALU_OR;       // ORI
-                    3'b001: ALU_Control = ALU_SLL;      // SLLI
-                    3'b101: ALU_Control = ALU_SRL;      // SRLI
-                    default: ALU_Control = ALU_ADD;
+                Alu_src   = ALU_SRC_IMM;
+                Imm_src   = IMM_I;
+                case (funct)
+                    10'b0000000_000: ALU_Control = ALU_ADD;   // ADDI
+                    10'b0000000_111: ALU_Control = ALU_AND;   // ANDI
+                    10'b0000000_110: ALU_Control = ALU_OR;    // ORI
+                    10'b0000000_100: ALU_Control = ALU_XOR;   // XORI
+                    10'b0000000_010: ALU_Control = ALU_SLT;   // SLTI
+                    10'b0000000_011: ALU_Control = ALU_SLTU;  // SLTIU
+                    10'b0000000_001: ALU_Control = ALU_SLL;   // SLLI
+                    10'b0000000_101: ALU_Control = ALU_SRL;   // SRLI
+                    10'b0100000_101: ALU_Control = ALU_SRA;   // SRAI
+                    default:         ALU_Control = ALU_ADD;
                 endcase
             end
-            7'b0000011: begin // LW
+
+            7'b0000011: begin // LOAD Instructions (LB, LH, LW, LBU, LHU)
                 Reg_write   = 1;
                 Mem_Write   = 0;
-                Result_src  = RES_SRC_Mem;
+                Result_src  = RES_SRC_Mem;  // Data comes from memory
                 Imm_src     = IMM_I;
                 Alu_src     = ALU_SRC_IMM;
-                ALU_Control = ALU_ADD;
+                ALU_Control = ALU_ADD;      // Base + offset for address
+
+                case (funct3)
+                    3'b000: Load_type = LOAD_BYTE;   // LB
+                    3'b001: Load_type = LOAD_HALF;   // LH
+                    3'b010: Load_type = LOAD_WORD;   // LW
+                    3'b100: Load_type = LOAD_BYTE_U; // LBU
+                    3'b101: Load_type = LOAD_HALF_U; // LHU
+                    default: Load_type = LOAD_WORD;  // Safe fallback
+                endcase
             end
-            7'b0100011: begin // SW
-                Reg_write   = 0;
-                Mem_Write   = 1;
-                Imm_src     = IMM_S;
-                Alu_src     = ALU_SRC_IMM;
-                ALU_Control = ALU_ADD;
+
+
+            7'b0100011: begin // STORE Instructions (SB, SH, SW)
+                Reg_write   = 0;             // no register write
+                Mem_Write   = 1;             // enable memory write
+                Result_src  = RES_SRC_Alu;   // irrelevant; no wb
+                Imm_src     = IMM_S;         // store offset
+                Alu_src     = ALU_SRC_IMM;   // compute base + offset
+                ALU_Control = ALU_ADD;       // address calculation
+
+                case (funct3)
+                    3'b000: Store_type = STORE_BYTE;   // SB
+                    3'b001: Store_type = STORE_HALF;   // SH
+                    3'b010: Store_type = STORE_WORD;   // SW
+                    default: Store_type = STORE_WORD;
+                endcase
             end
+
             7'b1100011: begin // Branch (BEQ, BNE)
                 Branch      = 1;
                 Imm_src     = IMM_B;
