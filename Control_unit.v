@@ -1,4 +1,4 @@
-// Control Unit for RV32I 
+// Control Unit for RV32I (Recommended Instructions Only)
 module control_unit(
     input  [6:0] opcode,
     input  [2:0] funct3,
@@ -14,7 +14,8 @@ module control_unit(
     output reg [3:0] ALU_Control,
     output reg branch_on_not_equal,
     output reg [1:0] Store_type,
-    output reg [2:0] Load_type
+    output reg [2:0] Load_type,
+    output reg [2:0] branch_cond
 );
 
     // Immediate Source Encoding
@@ -52,15 +53,22 @@ module control_unit(
            LOAD_HALF_U = 3'b011,   // You may compress differently if desired
            LOAD_BYTE_U = 3'b111;  // Or use 3 bits if you want all explicit types
 
-localparam STORE_WORD = 2'b00,
+    localparam STORE_WORD = 2'b00,
            STORE_HALF = 2'b01,
            STORE_BYTE = 2'b10;
+           
+        localparam BR_EQ  = 3'b000,
+           BR_NE  = 3'b001,
+           BR_LT  = 3'b010,
+           BR_GE  = 3'b011,
+           BR_LTU = 3'b100,
+           BR_GEU = 3'b101;
 
 
     wire [9:0] funct;
     assign funct = {funct7[6:0], funct3[2:0]};
 
-    always @(*) begin
+    always @(*) begin 
         // Defaults
         Reg_write   = 0;
         Mem_Write   = 0;
@@ -142,22 +150,42 @@ localparam STORE_WORD = 2'b00,
                 endcase
             end
 
-            7'b1100011: begin // Branch (BEQ, BNE)
+            7'b1100011: begin // Branch group (BEQ, BNE, BLT, BGE, BLTU, BGEU)
                 Branch      = 1;
                 Imm_src     = IMM_B;
-                
+                Alu_src     = ALU_SRC_REG;
+                Result_src  = RES_SRC_Alu; // irrelevant for branch
+                Reg_write   = 0;
+                Mem_Write   = 0;
+
                 case (funct3)
-                    3'b000: begin   
-                        ALU_Control = ALU_SUB; // BEQ
-                        branch_on_not_equal = 0;
+                    3'b000: begin // BEQ
+                        ALU_Control = ALU_SUB;  // compare equality by subtract
+                        branch_cond  = BR_EQ;
                     end
-                    3'b001: begin  
-                        ALU_Control = ALU_SUB; // BNE
-                        branch_on_not_equal = 1;
+                    3'b001: begin // BNE
+                        ALU_Control = ALU_SUB;
+                        branch_cond  = BR_NE;
+                    end
+                    3'b100: begin // BLT (signed)
+                        ALU_Control = ALU_SLT;
+                        branch_cond  = BR_LT;
+                    end
+                    3'b101: begin // BGE (signed)
+                        ALU_Control = ALU_SLT;
+                        branch_cond  = BR_GE;
+                    end
+                    3'b110: begin // BLTU (unsigned)
+                        ALU_Control = ALU_SLTU;
+                        branch_cond  = BR_LTU;
+                    end
+                    3'b111: begin // BGEU (unsigned)
+                        ALU_Control = ALU_SLTU;
+                        branch_cond  = BR_GEU;
                     end
                     default: begin
                         ALU_Control = ALU_SUB;
-                        branch_on_not_equal = 0;
+                        branch_cond  = BR_EQ;
                     end
                 endcase
             end
