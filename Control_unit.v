@@ -12,7 +12,7 @@ module control_unit(
     output reg Branch,
     output reg Alu_src,
     output reg [3:0] ALU_Control,
-    output reg branch_on_not_equal,
+    //output reg branch_on_not_equal, - removed and replaced with branch cond
     output reg [1:0] Store_type,
     output reg [2:0] Load_type,
     output reg [2:0] branch_cond
@@ -216,6 +216,10 @@ module control_unit(
                 Alu_src     = ALU_SRC_IMM;
                 ALU_Control = ALU_ADD;
             end
+            default: 
+                Load_type   = LOAD_WORD;
+                Store_type  = STORE_WORD;
+                branch_cond = BR_EQ;
         endcase
     end
 
