@@ -28,12 +28,12 @@ module ex_stage (
     // ----------------------------------
     // ALU
     // ----------------------------------
-    alu ALU (
+    ALU ALU (
         .A      (rd1_ex),
         .B      (alu_in2),
         .ALU_Control   (ALU_Control_ex),
         .ALU_Result (alu_result_ex),
-        .zero   ()                  // not used directly for better critical path and cleaner logic
+        .Zero   ()                  // not used directly for better critical path and cleaner logic
     );
 
     // ----------------------------------
@@ -46,22 +46,22 @@ module ex_stage (
     // ----------------------------------
     reg branch_taken;
 
-    localparam BR_EQ  = 3'b000,
-           BR_NE  = 3'b001,
-           BR_LT  = 3'b010,
-           BR_GE  = 3'b011,
-           BR_LTU = 3'b100,
-           BR_GEU = 3'b101;
+    localparam BR_EQ  = 3'b001,
+           BR_NE  = 3'b010,
+           BR_LT  = 3'b011,
+           BR_GE  = 3'b100,
+           BR_LTU = 3'b101,
+           BR_GEU = 3'b110;
 
     always @(*) begin
         branch_taken   = 0;
         case (branch_cond_ex)
-            BR_EQ:  branch_taken = (rd1_ex == rd2_ex);
+            BR_EQ:  branch_taken = (rd1_ex === rd2_ex) && (rd1_ex !== 32'hx);
             BR_NE:  branch_taken = (rd1_ex != rd2_ex);
-            BR_LT:  branch_taken = ($signed(rd1_ex) <  $signed(rd2));
-            BR_GE:  branch_taken = ($signed(rd1_ex) >=  $signed(rd2))
-            BR_LTU: branch_taken = (rd1_ex < rd2);
-            BR_GEU: branch_taken = (rd1_ex >= rd2);
+            BR_LT:  branch_taken = ($signed(rd1_ex) <  $signed(rd2_ex));
+            BR_GE:  branch_taken = ($signed(rd1_ex) >=  $signed(rd2_ex));
+            BR_LTU: branch_taken = (rd1_ex < rd2_ex);
+            BR_GEU: branch_taken = (rd1_ex >= rd2_ex);
             default: branch_taken = 1'b0;
         endcase
     end
@@ -69,7 +69,7 @@ module ex_stage (
     assign take_branch_ex = branch_taken | jump_ex;
 
     
-    // Store data forwarding (no logic yet) - mem[ rs1 + imm ] ← rs2 
+    // Store data forwarding (no logic yet) - mem[ rs1 + imm ] â†? rs2 
     assign store_data_ex = rd2_ex;
 
 endmodule
