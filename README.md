@@ -8,11 +8,13 @@
   - C code -> assembly test runs
 
 ### 🚧 Work in Progress
-- **5-Stage Pipelined RV32I Core**
-  - Pipeline stages: IF / ID / EX / MEM / WB=
+- **5-Stage Pipelined RV32I Core Verification**
   - SystemVerilog verification environment under development
-    - Directed tests for pipeline sanity
+    - Directed tests for pipeline sanity  
+    - Spike Instruction Set Simulator and DUT equivalece tests
+    - Functional Coverage and UVM testbench
     - Self-checking testbench framework being extended
+    - SoC design explorations
     
 
 ## VSI (1TOPS Programme) — Future SoC Roadmap
