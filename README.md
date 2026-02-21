@@ -21,7 +21,10 @@
 
 This project is being developed under the **VLSI Society of India (VSI) – 1TOPS Programme**, with the long-term goal of evolving the current RISC-V core into a **tapeout-ready secure SoC prototype**.
 
+## SoC architecture
+![risc_soc_harvard](https://github.com/user-attachments/assets/ad6c2de4-68e1-4b47-8346-7d50ac6d4bae)
 
-## RV32I % stage pipelined Architecture diagram
+
+## RV32I 5 stage pipelined Architecture diagram
 <img width="1790" height="893" alt="image" src="https://github.com/user-attachments/assets/64596263-c747-4112-aee7-fe5e01ed9585" />
 
