@@ -21,7 +21,7 @@
 
 This project is being developed under the **VLSI Society of India (VSI) – 1TOPS Programme**, with the long-term goal of evolving the current RISC-V core into a **tapeout-ready secure SoC prototype**.
 
-## SoC architecture
+## SoC architecture (Harvard based - Tentative Under Review)
 ![Soc_no_dma](https://github.com/user-attachments/assets/cd069c4f-553f-4387-a1a1-37b10efd5285)
 
 
